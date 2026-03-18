@@ -51,13 +51,13 @@ Today's date: !`date +%Y-%m-%d`
 Current ISO week: !`date +%Y-W%V`
 Day of week: !`date +%A`
 
-## Existing goals
-
-Weekly goals for this week (if any): !`cat ~/.claude/lablog/goals/weekly/$(date +%Y-W%V).md 2>/dev/null || echo "No weekly goals set yet"`
-
-Daily goals for today (if any): !`cat ~/.claude/lablog/goals/daily/$(date +%Y-%m-%d).md 2>/dev/null || echo "No daily goals set yet"`
-
 ## Your task
+
+First, use the date values above to determine file paths, then use the Read tool to check for existing goals:
+- Weekly goals file: `~/.claude/lablog/goals/weekly/{ISO_WEEK}.md` (e.g., `2026-W12.md`)
+- Daily goals file: `~/.claude/lablog/goals/daily/{DATE}.md` (e.g., `2026-03-18.md`)
+
+Read both files to check if goals already exist (they may not exist yet, that's fine).
 
 The user wants to set their research goals. The argument is: "$1"
 
@@ -89,9 +89,9 @@ Current time: !`date +%H:%M`
 Working directory: !`pwd`
 Hostname: !`hostname -s`
 
-Existing log for today (if any): !`cat ~/.claude/lablog/logs/$(date +%Y-%m-%d).md 2>/dev/null || echo "No log entries yet today"`
-
 ## Your task
+
+First, use the date above to check for existing logs by reading `~/.claude/lablog/logs/{DATE}.md` (e.g., `2026-03-18.md`) with the Read tool. The file may not exist yet, that's fine.
 
 Summarize what was accomplished in this Claude session and append it to today's activity log.
 

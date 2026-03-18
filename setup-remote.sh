@@ -134,7 +134,7 @@ Day of week: !`date +%A`
 
 ## Available data
 
-Pulling latest logs from all machines: !`cd ~/.claude/lablog && git pull --rebase 2>/dev/null; echo "sync complete"`
+Pulling latest logs from all machines: !`git -C ~/.claude/lablog pull --rebase 2>/dev/null; echo "sync complete"`
 
 Weekly goals files: !`ls ~/.claude/lablog/goals/weekly/ 2>/dev/null || echo "none"`
 Daily goals files: !`ls ~/.claude/lablog/goals/daily/ 2>/dev/null || echo "none"`

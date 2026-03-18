@@ -209,7 +209,7 @@ settings['hooks'] = {
         'matcher': '*',
         'hooks': [{
             'type': 'prompt',
-            'prompt': 'Review the conversation transcript. If substantive work was done in this session (code changes, analysis, debugging, research, server commands, file operations, etc.) AND no write or edit to any file under ~/.claude/lablog/logs/ has been made yet in this session, then BLOCK with reason: \'Auto-logging: Before ending, append a brief session summary to ~/.claude/lablog/logs/YYYY-MM-DD.md (use today actual date). Create the file with header # Activity Log - YYYY-MM-DD (DayOfWeek) if it does not exist. Format the entry as: ### Session - HH:MM followed by **Host:** hostname | **Project:** project/dir, then 3-5 concise bullet points of what was accomplished. Use the Write or Edit tool.\' If a log entry was already written to ~/.claude/lablog/logs/ in this session, OR if no substantive work was done, then APPROVE and let the session end.'
+            'prompt': 'Check if substantive work was done in this session (code changes, debugging, research, server commands, file edits). If no substantive work was done, APPROVE. If a file under ~/.claude/lablog/logs/ was already written or edited in this session, APPROVE. Otherwise BLOCK: auto-log session activity to ~/.claude/lablog/logs/YYYY-MM-DD.md before ending.'
         }]
     }],
     'SessionEnd': [{
@@ -240,7 +240,7 @@ else
         "hooks": [
           {
             "type": "prompt",
-            "prompt": "Review the conversation transcript. If substantive work was done in this session (code changes, analysis, debugging, research, server commands, file operations, etc.) AND no write or edit to any file under ~/.claude/lablog/logs/ has been made yet in this session, then BLOCK with reason: 'Auto-logging: Before ending, append a brief session summary to ~/.claude/lablog/logs/YYYY-MM-DD.md (use today actual date). Create the file with header \"# Activity Log - YYYY-MM-DD (DayOfWeek)\" if it does not exist. Format the entry as: ### Session - HH:MM followed by **Host:** hostname | **Project:** project/dir, then 3-5 concise bullet points of what was accomplished. Use the Write or Edit tool.' If a log entry was already written to ~/.claude/lablog/logs/ in this session, OR if no substantive work was done (e.g. just greetings, questions about Claude, or trivial interactions), then APPROVE and let the session end."
+            "prompt": "Check if substantive work was done in this session (code changes, debugging, research, server commands, file edits). If no substantive work was done, APPROVE. If a file under ~/.claude/lablog/logs/ was already written or edited in this session, APPROVE. Otherwise BLOCK: auto-log session activity to ~/.claude/lablog/logs/YYYY-MM-DD.md before ending."
           }
         ]
       }

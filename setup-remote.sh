@@ -209,7 +209,7 @@ settings['hooks'] = {
         'matcher': '*',
         'hooks': [{
             'type': 'prompt',
-            'prompt': 'Check if substantive work was done in this session (code changes, debugging, research, server commands, file edits). If no substantive work was done, APPROVE. If a file under ~/.claude/lablog/logs/ was already written or edited in this session, APPROVE. Otherwise BLOCK: auto-log session activity to ~/.claude/lablog/logs/YYYY-MM-DD.md before ending.'
+            'prompt': 'Check if substantive work was done in this session (code changes, debugging, research, server commands, file edits). If no substantive work was done, respond with {\"ok\": true}. If a file under ~/.claude/lablog/logs/ was already written or edited in this session, respond with {\"ok\": true}. Otherwise respond with {\"ok\": false, \"reason\": \"Auto-log session activity to ~/.claude/lablog/logs/YYYY-MM-DD.md before ending\"}.'
         }]
     }],
     'SessionEnd': [{
@@ -240,7 +240,7 @@ else
         "hooks": [
           {
             "type": "prompt",
-            "prompt": "Check if substantive work was done in this session (code changes, debugging, research, server commands, file edits). If no substantive work was done, APPROVE. If a file under ~/.claude/lablog/logs/ was already written or edited in this session, APPROVE. Otherwise BLOCK: auto-log session activity to ~/.claude/lablog/logs/YYYY-MM-DD.md before ending."
+            "prompt": "Check if substantive work was done in this session (code changes, debugging, research, server commands, file edits). If no substantive work was done, respond with {\"ok\": true}. If a file under ~/.claude/lablog/logs/ was already written or edited in this session, respond with {\"ok\": true}. Otherwise respond with {\"ok\": false, \"reason\": \"Auto-log session activity to ~/.claude/lablog/logs/YYYY-MM-DD.md before ending\"}."
           }
         ]
       }

@@ -205,13 +205,6 @@ import json
 with open('$SETTINGS_FILE') as f:
     settings = json.load(f)
 settings['hooks'] = {
-    'Stop': [{
-        'matcher': '*',
-        'hooks': [{
-            'type': 'prompt',
-            'prompt': 'Check if substantive work was done in this session (code changes, debugging, research, server commands, file edits). If no substantive work was done, respond with {\"ok\": true}. If a file under ~/.claude/lablog/logs/ was already written or edited in this session, respond with {\"ok\": true}. Otherwise respond with {\"ok\": false, \"reason\": \"Auto-log session activity to ~/.claude/lablog/logs/YYYY-MM-DD.md before ending\"}.'
-        }]
-    }],
     'SessionEnd': [{
         'matcher': '*',
         'hooks': [{
@@ -234,17 +227,6 @@ else
     cat > "$SETTINGS_FILE" << 'SETTINGS_EOF'
 {
   "hooks": {
-    "Stop": [
-      {
-        "matcher": "*",
-        "hooks": [
-          {
-            "type": "prompt",
-            "prompt": "Check if substantive work was done in this session (code changes, debugging, research, server commands, file edits). If no substantive work was done, respond with {\"ok\": true}. If a file under ~/.claude/lablog/logs/ was already written or edited in this session, respond with {\"ok\": true}. Otherwise respond with {\"ok\": false, \"reason\": \"Auto-log session activity to ~/.claude/lablog/logs/YYYY-MM-DD.md before ending\"}."
-          }
-        ]
-      }
-    ],
     "SessionEnd": [
       {
         "matcher": "*",
@@ -270,7 +252,7 @@ echo ""
 echo "=== Setup complete on $(hostname) ==="
 echo ""
 echo "Commands:  /goals daily  /goals weekly  /log  /benchling"
-echo "Auto-log:  sessions auto-log on exit"
+echo "Logging:   run /log before exiting to record session activity"
 echo "Auto-sync: logs push to GitHub on exit"
 echo ""
 echo "Restart Claude Code for hooks to take effect."

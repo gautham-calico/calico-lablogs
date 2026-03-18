@@ -1,47 +1,44 @@
 #!/bin/bash
-# Setup lablog on a remote machine
-# Usage: curl/scp this script to the remote machine and run it
-#   ./setup-remote.sh <git-repo-url>
+# Setup lablog on any machine - pulls everything from GitHub
 #
-# Example:
-#   ./setup-remote.sh git@github.com:gautham/lablog.git
+# Run on any server with one command:
+#   bash <(curl -sL https://raw.githubusercontent.com/gautham-calico/calico-lablogs/main/setup-remote.sh)
+#
+# Or if already cloned:
+#   ~/.claude/lablog/setup-remote.sh
 
 set -euo pipefail
 
-REPO_URL="${1:-}"
-
-if [ -z "$REPO_URL" ]; then
-    echo "Usage: ./setup-remote.sh <git-repo-url>"
-    echo "Example: ./setup-remote.sh git@github.com:youruser/lablog.git"
-    exit 1
-fi
+REPO_URL="https://github.com/gautham-calico/calico-lablogs.git"
+LABLOG_DIR="$HOME/.claude/lablog"
+COMMANDS_DIR="$HOME/.claude/commands"
+SETTINGS_FILE="$HOME/.claude/settings.json"
 
 echo "=== Setting up lablog on $(hostname) ==="
 
-# 1. Clone or update lablog repo
-LABLOG_DIR="$HOME/.claude/lablog"
+# 1. Clone or update the repo
+mkdir -p "$HOME/.claude"
+
 if [ -d "$LABLOG_DIR/.git" ]; then
-    echo "Lablog repo already exists, pulling latest..."
-    cd "$LABLOG_DIR" && git pull
+    echo "[1/4] Repo exists, pulling latest..."
+    cd "$LABLOG_DIR" && git pull --rebase 2>/dev/null || true
 else
-    echo "Cloning lablog repo..."
-    mkdir -p "$HOME/.claude"
-    # If directory exists but isn't a repo, back it up
     if [ -d "$LABLOG_DIR" ]; then
+        echo "[1/4] Backing up existing lablog dir..."
         mv "$LABLOG_DIR" "${LABLOG_DIR}.bak.$(date +%s)"
     fi
+    echo "[1/4] Cloning from GitHub..."
     git clone "$REPO_URL" "$LABLOG_DIR"
 fi
 
-# 2. Ensure directory structure exists
+# Ensure directory structure
 mkdir -p "$LABLOG_DIR/goals/weekly" "$LABLOG_DIR/goals/daily" "$LABLOG_DIR/logs" "$LABLOG_DIR/entries"
 
-# 3. Create commands directory and command files
-COMMANDS_DIR="$HOME/.claude/commands"
+# 2. Create slash commands
+echo "[2/4] Installing commands (/goals, /log, /benchling)..."
 mkdir -p "$COMMANDS_DIR"
 
-# /goals command
-cat > "$COMMANDS_DIR/goals.md" << 'GOALEOF'
+cat > "$COMMANDS_DIR/goals.md" << 'CMD_EOF'
 ---
 description: Set daily or weekly research goals
 argument-hint: [daily|weekly]
@@ -77,10 +74,9 @@ The user wants to set their research goals. The argument is: "$1"
 4. Format with a header: `# Daily Goals - YYYY-MM-DD (Day of Week)`
 
 Use bullet points for goals. Keep the interaction concise - show existing goals, ask for new ones, save.
-GOALEOF
+CMD_EOF
 
-# /log command
-cat > "$COMMANDS_DIR/log.md" << 'LOGEOF'
+cat > "$COMMANDS_DIR/log.md" << 'CMD_EOF'
 ---
 description: Log current session activity to daily lab log
 allowed-tools: Read, Write, Edit, Bash(date:*), Bash(mkdir:*)
@@ -121,10 +117,9 @@ Summarize what was accomplished in this Claude session and append it to today's 
 Keep bullet points concise but specific enough to be useful in a weekly Benchling entry later.
 
 Do not include any other text besides the tool calls needed to write the log.
-LOGEOF
+CMD_EOF
 
-# /benchling command
-cat > "$COMMANDS_DIR/benchling.md" << 'BENCHEOF'
+cat > "$COMMANDS_DIR/benchling.md" << 'CMD_EOF'
 ---
 description: Generate weekly Benchling notebook entry
 argument-hint: [week-number]
@@ -139,7 +134,7 @@ Day of week: !`date +%A`
 
 ## Available data
 
-Pull latest from all machines first: !`cd ~/.claude/lablog && git pull --rebase 2>/dev/null; echo "sync done"`
+Pulling latest logs from all machines: !`cd ~/.claude/lablog && git pull --rebase 2>/dev/null; echo "sync complete"`
 
 Weekly goals files: !`ls ~/.claude/lablog/goals/weekly/ 2>/dev/null || echo "none"`
 Daily goals files: !`ls ~/.claude/lablog/goals/daily/ 2>/dev/null || echo "none"`
@@ -192,20 +187,51 @@ Generate a complete weekly Benchling notebook entry by compiling goals and daily
 5. **Save a copy** to `~/.claude/lablog/entries/YYYY-WXX.md`
 
 If data is missing for some days, note those gaps.
-BENCHEOF
+CMD_EOF
 
-# 4. Configure hooks in settings.json
-SETTINGS_FILE="$HOME/.claude/settings.json"
+# 3. Configure hooks
+echo "[3/4] Configuring hooks..."
+
 if [ -f "$SETTINGS_FILE" ]; then
-    # Check if hooks already configured
     if grep -q "lablog" "$SETTINGS_FILE" 2>/dev/null; then
-        echo "Hooks already configured in settings.json"
+        echo "  Hooks already configured."
     else
-        echo "NOTE: Please add hooks to $SETTINGS_FILE manually."
-        echo "See ~/.claude/lablog/hooks-config.json for the config to merge."
+        # Backup existing settings and merge hooks into it
+        cp "$SETTINGS_FILE" "${SETTINGS_FILE}.bak"
+        # Use python/jq to merge if available, otherwise replace
+        if command -v python3 &>/dev/null; then
+            python3 -c "
+import json
+with open('$SETTINGS_FILE') as f:
+    settings = json.load(f)
+settings['hooks'] = {
+    'Stop': [{
+        'matcher': '*',
+        'hooks': [{
+            'type': 'prompt',
+            'prompt': 'Review the conversation transcript. If substantive work was done in this session (code changes, analysis, debugging, research, server commands, file operations, etc.) AND no write or edit to any file under ~/.claude/lablog/logs/ has been made yet in this session, then BLOCK with reason: \'Auto-logging: Before ending, append a brief session summary to ~/.claude/lablog/logs/YYYY-MM-DD.md (use today actual date). Create the file with header # Activity Log - YYYY-MM-DD (DayOfWeek) if it does not exist. Format the entry as: ### Session - HH:MM followed by **Host:** hostname | **Project:** project/dir, then 3-5 concise bullet points of what was accomplished. Use the Write or Edit tool.\' If a log entry was already written to ~/.claude/lablog/logs/ in this session, OR if no substantive work was done, then APPROVE and let the session end.'
+        }]
+    }],
+    'SessionEnd': [{
+        'matcher': '*',
+        'hooks': [{
+            'type': 'command',
+            'command': 'bash ~/.claude/lablog/sync.sh'
+        }]
+    }]
+}
+with open('$SETTINGS_FILE', 'w') as f:
+    json.dump(settings, f, indent=2)
+"
+            echo "  Hooks merged into existing settings."
+        else
+            echo "  WARNING: Could not auto-merge hooks (no python3 found)."
+            echo "  Backup saved to ${SETTINGS_FILE}.bak"
+            echo "  Please manually add hooks. See ~/.claude/lablog/hooks-config.json"
+        fi
     fi
 else
-    cat > "$SETTINGS_FILE" << 'SETTINGSEOF'
+    cat > "$SETTINGS_FILE" << 'SETTINGS_EOF'
 {
   "hooks": {
     "Stop": [
@@ -232,17 +258,19 @@ else
     ]
   }
 }
-SETTINGSEOF
+SETTINGS_EOF
+    echo "  Settings created with hooks."
 fi
 
-# Make scripts executable
-chmod +x "$LABLOG_DIR/sync.sh"
-chmod +x "$LABLOG_DIR/setup-remote.sh"
+# 4. Ensure scripts are executable
+echo "[4/4] Finalizing..."
+chmod +x "$LABLOG_DIR/sync.sh" "$LABLOG_DIR/setup-remote.sh" 2>/dev/null || true
 
 echo ""
 echo "=== Setup complete on $(hostname) ==="
-echo "Commands available: /goals, /log, /benchling"
-echo "Auto-logging: enabled (Stop hook)"
-echo "Auto-sync: enabled (SessionEnd hook)"
+echo ""
+echo "Commands:  /goals daily  /goals weekly  /log  /benchling"
+echo "Auto-log:  sessions auto-log on exit"
+echo "Auto-sync: logs push to GitHub on exit"
 echo ""
 echo "Restart Claude Code for hooks to take effect."

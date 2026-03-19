@@ -1,12 +1,12 @@
 #!/bin/bash
-# Auto-sync lablog to git remote
+# Auto-sync lablog data to private git remote
 # Called by SessionEnd hook after every Claude session
 # Exits silently if no remote configured or nothing to sync
 
 set -euo pipefail
 
-LABLOG_DIR="$HOME/.claude/lablog"
-cd "$LABLOG_DIR" || exit 0
+LABLOG_DATA_DIR="$HOME/.claude/lablog-data"
+cd "$LABLOG_DATA_DIR" || exit 0
 
 # Skip if not a git repo or no remote configured
 git rev-parse --git-dir &>/dev/null || exit 0

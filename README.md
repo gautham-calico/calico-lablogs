@@ -12,6 +12,8 @@ bash <(curl -sL https://raw.githubusercontent.com/gautham-calico/calico-lablogs/
 
 Then restart Claude Code.
 
+**Note:** The installer clones this public repo (tools/scripts) and a separate private repo ([calico-labdata](https://github.com/gautham-calico/calico-labdata)) for your actual logs, goals, and entries. You need access to both repos.
+
 ## Commands
 
 | Command | Description |
@@ -43,21 +45,23 @@ Each `/log` entry captures:
 ## Data structure
 
 ```
-~/.claude/lablog/
-  logs/           # Daily session logs (YYYY-MM-DD.md)
+~/.claude/lablog/           # This repo (public) - tools & scripts
+  sync.sh                   # Auto-sync script (runs on session end)
+  setup-remote.sh           # Installer
+
+~/.claude/lablog-data/      # Private repo - your data
+  logs/                     # Daily session logs (YYYY-MM-DD.md)
   goals/
-    daily/        # Daily goals (YYYY-MM-DD.md)
-    weekly/       # Weekly goals (YYYY-WXX.md)
-  entries/        # Compiled Benchling entries (YYYY-WXX.md)
-  sync.sh         # Auto-sync script (runs on session end)
-  setup-remote.sh # Installer
+    daily/                  # Daily goals (YYYY-MM-DD.md)
+    weekly/                 # Weekly goals (YYYY-WXX.md)
+  entries/                  # Compiled Benchling entries (YYYY-WXX.md)
 ```
 
 ## Multi-machine sync
 
-Logs sync automatically via this GitHub repo. When you run `/benchling`, it pulls the latest logs from all machines before compiling, so your weekly entry includes work from every environment you used.
+Logs sync automatically via the private GitHub repo. When you run `/benchling`, it pulls the latest logs from all machines before compiling, so your weekly entry includes work from every environment you used.
 
 ## Requirements
 
 - [Claude Code](https://claude.ai/claude-code) installed
-- Git configured with GitHub access
+- Git configured with GitHub access (to both repos)

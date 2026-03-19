@@ -1,5 +1,5 @@
 #!/bin/bash
-# Setup lablog on any machine - pulls everything from GitHub
+# Setup lablog on any machine - pulls tools (public) and data (private) from GitHub
 #
 # Run on any server with one command:
 #   bash <(curl -sL https://raw.githubusercontent.com/gautham-calico/calico-lablogs/main/setup-remote.sh)
@@ -9,33 +9,48 @@
 
 set -euo pipefail
 
-REPO_URL="https://github.com/gautham-calico/calico-lablogs.git"
+TOOLS_REPO="https://github.com/gautham-calico/calico-lablogs.git"
+DATA_REPO="https://github.com/gautham-calico/calico-labdata.git"
 LABLOG_DIR="$HOME/.claude/lablog"
+DATA_DIR="$HOME/.claude/lablog-data"
 COMMANDS_DIR="$HOME/.claude/commands"
 SETTINGS_FILE="$HOME/.claude/settings.json"
 
 echo "=== Setting up lablog on $(hostname) ==="
 
-# 1. Clone or update the repo
+# 1a. Clone or update the tools repo (public)
 mkdir -p "$HOME/.claude"
 
 if [ -d "$LABLOG_DIR/.git" ]; then
-    echo "[1/4] Repo exists, pulling latest..."
+    echo "[1/5] Tools repo exists, pulling latest..."
     cd "$LABLOG_DIR" && git pull --rebase 2>/dev/null || true
 else
     if [ -d "$LABLOG_DIR" ]; then
-        echo "[1/4] Backing up existing lablog dir..."
+        echo "[1/5] Backing up existing lablog dir..."
         mv "$LABLOG_DIR" "${LABLOG_DIR}.bak.$(date +%s)"
     fi
-    echo "[1/4] Cloning from GitHub..."
-    git clone "$REPO_URL" "$LABLOG_DIR"
+    echo "[1/5] Cloning tools repo..."
+    git clone "$TOOLS_REPO" "$LABLOG_DIR"
 fi
 
-# Ensure directory structure
-mkdir -p "$LABLOG_DIR/goals/weekly" "$LABLOG_DIR/goals/daily" "$LABLOG_DIR/logs" "$LABLOG_DIR/entries"
+# 1b. Clone or update the data repo (private)
+if [ -d "$DATA_DIR/.git" ]; then
+    echo "[2/5] Data repo exists, pulling latest..."
+    cd "$DATA_DIR" && git pull --rebase 2>/dev/null || true
+else
+    if [ -d "$DATA_DIR" ]; then
+        echo "[2/5] Backing up existing lablog-data dir..."
+        mv "$DATA_DIR" "${DATA_DIR}.bak.$(date +%s)"
+    fi
+    echo "[2/5] Cloning data repo..."
+    git clone "$DATA_REPO" "$DATA_DIR"
+fi
 
-# 2. Create slash commands
-echo "[2/4] Installing commands (/goals, /log, /benchling)..."
+# Ensure directory structure in data repo
+mkdir -p "$DATA_DIR/goals/weekly" "$DATA_DIR/goals/daily" "$DATA_DIR/logs" "$DATA_DIR/entries"
+
+# 3. Create slash commands
+echo "[3/5] Installing commands (/goals, /log, /benchling)..."
 mkdir -p "$COMMANDS_DIR"
 
 cat > "$COMMANDS_DIR/goals.md" << 'CMD_EOF'
@@ -54,8 +69,8 @@ Day of week: !`date +%A`
 ## Your task
 
 First, use the date values above to determine file paths, then use the Read tool to check for existing goals:
-- Weekly goals file: `~/.claude/lablog/goals/weekly/{ISO_WEEK}.md` (e.g., `2026-W12.md`)
-- Daily goals file: `~/.claude/lablog/goals/daily/{DATE}.md` (e.g., `2026-03-18.md`)
+- Weekly goals file: `~/.claude/lablog-data/goals/weekly/{ISO_WEEK}.md` (e.g., `2026-W12.md`)
+- Daily goals file: `~/.claude/lablog-data/goals/daily/{DATE}.md` (e.g., `2026-03-18.md`)
 
 Read both files to check if goals already exist (they may not exist yet, that's fine).
 
@@ -64,13 +79,13 @@ The user wants to set their research goals. The argument is: "$1"
 **If "$1" is "weekly":**
 1. Show existing weekly goals above (if any) and ask if they want to update or replace them
 2. Ask the user to type their weekly goals
-3. Write them to `~/.claude/lablog/goals/weekly/YYYY-WXX.md` using the current ISO week
+3. Write them to `~/.claude/lablog-data/goals/weekly/YYYY-WXX.md` using the current ISO week
 4. Format with a header: `# Weekly Goals - YYYY-WXX (date range Mon-Fri)`
 
 **If "$1" is "daily" or empty (default to daily):**
 1. Show existing daily goals above (if any) and ask if they want to update or replace them
 2. Ask the user to type their daily goals
-3. Write them to `~/.claude/lablog/goals/daily/YYYY-MM-DD.md` using today's date
+3. Write them to `~/.claude/lablog-data/goals/daily/YYYY-MM-DD.md` using today's date
 4. Format with a header: `# Daily Goals - YYYY-MM-DD (Day of Week)`
 
 Use bullet points for goals. Keep the interaction concise - show existing goals, ask for new ones, save.
@@ -91,7 +106,7 @@ Hostname: !`hostname -s`
 
 ## Your task
 
-First, use the date above to check for existing logs by reading `~/.claude/lablog/logs/{DATE}.md` (e.g., `2026-03-18.md`) with the Read tool. The file may not exist yet, that's fine.
+First, use the date above to check for existing logs by reading `~/.claude/lablog-data/logs/{DATE}.md` (e.g., `2026-03-18.md`) with the Read tool. The file may not exist yet, that's fine.
 
 Summarize what was accomplished in this Claude session and append it to today's activity log.
 
@@ -102,7 +117,7 @@ Summarize what was accomplished in this Claude session and append it to today's 
    - Files created or modified
    - Key decisions or findings
 
-2. Append a session entry to `~/.claude/lablog/logs/YYYY-MM-DD.md` (today's date).
+2. Append a session entry to `~/.claude/lablog-data/logs/YYYY-MM-DD.md` (today's date).
    - If the file doesn't exist, create it with header: `# Activity Log - YYYY-MM-DD (Day of Week)`
    - If it exists, append to it
 
@@ -134,11 +149,11 @@ Day of week: !`date +%A`
 
 ## Available data
 
-Pulling latest logs from all machines: !`git -C ~/.claude/lablog pull --rebase 2>/dev/null; echo "sync complete"`
+Pulling latest logs from all machines: !`git -C ~/.claude/lablog-data pull --rebase 2>/dev/null; echo "sync complete"`
 
-Weekly goals files: !`ls ~/.claude/lablog/goals/weekly/ 2>/dev/null || echo "none"`
-Daily goals files: !`ls ~/.claude/lablog/goals/daily/ 2>/dev/null || echo "none"`
-Daily log files: !`ls ~/.claude/lablog/logs/ 2>/dev/null || echo "none"`
+Weekly goals files: !`ls ~/.claude/lablog-data/goals/weekly/ 2>/dev/null || echo "none"`
+Daily goals files: !`ls ~/.claude/lablog-data/goals/daily/ 2>/dev/null || echo "none"`
+Daily log files: !`ls ~/.claude/lablog-data/logs/ 2>/dev/null || echo "none"`
 
 ## Your task
 
@@ -151,9 +166,9 @@ Generate a complete weekly Benchling notebook entry by compiling goals and daily
 1. **Determine the date range** for the target week (Monday through Friday/Sunday)
 
 2. **Read all source files for that week:**
-   - Weekly goals: `~/.claude/lablog/goals/weekly/YYYY-WXX.md`
-   - Daily goals: `~/.claude/lablog/goals/daily/YYYY-MM-DD.md` for each day
-   - Daily logs: `~/.claude/lablog/logs/YYYY-MM-DD.md` for each day
+   - Weekly goals: `~/.claude/lablog-data/goals/weekly/YYYY-WXX.md`
+   - Daily goals: `~/.claude/lablog-data/goals/daily/YYYY-MM-DD.md` for each day
+   - Daily logs: `~/.claude/lablog-data/logs/YYYY-MM-DD.md` for each day
 
 3. **Compile into a structured Benchling entry** using this format:
 
@@ -184,13 +199,13 @@ Generate a complete weekly Benchling notebook entry by compiling goals and daily
 [suggested focus areas based on incomplete goals or ongoing work]
 
 4. **Display the compiled entry** for copy-paste into Benchling
-5. **Save a copy** to `~/.claude/lablog/entries/YYYY-WXX.md`
+5. **Save a copy** to `~/.claude/lablog-data/entries/YYYY-WXX.md`
 
 If data is missing for some days, note those gaps.
 CMD_EOF
 
-# 3. Configure hooks
-echo "[3/4] Configuring hooks..."
+# 4. Configure hooks
+echo "[4/5] Configuring hooks..."
 
 if [ -f "$SETTINGS_FILE" ]; then
     if grep -q "lablog" "$SETTINGS_FILE" 2>/dev/null; then
@@ -244,8 +259,8 @@ SETTINGS_EOF
     echo "  Settings created with hooks."
 fi
 
-# 4. Ensure scripts are executable
-echo "[4/4] Finalizing..."
+# 5. Ensure scripts are executable
+echo "[5/5] Finalizing..."
 chmod +x "$LABLOG_DIR/sync.sh" "$LABLOG_DIR/setup-remote.sh" 2>/dev/null || true
 
 echo ""

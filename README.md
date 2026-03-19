@@ -67,7 +67,13 @@ Each `/log` entry captures:
 
 Logs sync automatically via the private GitHub repo. When you run `/benchling`, it pulls the latest logs from all machines before compiling, so your weekly entry includes work from every environment you used.
 
-## Requirements
+## Prerequisites
 
 - [Claude Code](https://claude.ai/claude-code) installed
-- Git configured with GitHub access (to both repos)
+- Git installed
+- GitHub authentication configured (one of the following):
+  - **SSH key** (recommended): `ssh-keygen -t ed25519` then add the key at [github.com/settings/keys](https://github.com/settings/keys)
+  - **GitHub CLI**: `gh auth login`
+  - **HTTPS**: git will prompt for your username and personal access token
+
+The installer checks for authentication and will warn you if none is detected.

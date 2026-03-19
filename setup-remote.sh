@@ -18,6 +18,35 @@ SETTINGS_FILE="$HOME/.claude/settings.json"
 echo "=== Setting up lablog on $(hostname) ==="
 echo ""
 
+# 0. Check git + GitHub auth
+if ! command -v git &>/dev/null; then
+    echo "ERROR: git is not installed. Please install git first."
+    exit 1
+fi
+
+echo "Checking GitHub access..."
+if ssh -T git@github.com 2>&1 | grep -q "successfully authenticated"; then
+    echo "  Authenticated via SSH."
+elif gh auth status &>/dev/null 2>&1; then
+    echo "  Authenticated via GitHub CLI."
+elif git credential-manager 2>/dev/null || git config --global credential.helper | grep -q .; then
+    echo "  Git credential helper configured."
+else
+    echo ""
+    echo "WARNING: No GitHub authentication detected."
+    echo "You need one of the following to access your private data repo:"
+    echo "  1. SSH key:  ssh-keygen -t ed25519 && add key to github.com/settings/keys"
+    echo "  2. GH CLI:   gh auth login"
+    echo "  3. HTTPS:    git will prompt for username/password (or token)"
+    echo ""
+    read -rp "Continue anyway? (y/N): " CONTINUE
+    if [[ ! "$CONTINUE" =~ ^[Yy]$ ]]; then
+        echo "Setup cancelled. Configure git auth and try again."
+        exit 1
+    fi
+fi
+echo ""
+
 # 1a. Clone or update the tools repo (public)
 mkdir -p "$HOME/.claude"
 

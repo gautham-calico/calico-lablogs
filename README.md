@@ -4,15 +4,21 @@ A lightweight activity logging system for [Claude Code](https://claude.ai/claude
 
 ## Install
 
-Run this one-liner on any machine with Claude Code:
+### 1. Create your private data repo
+
+Go to [github.com/new](https://github.com/new) and create a **private**, **empty** repo (no README, no license, no .gitignore). Name it whatever you like, e.g. `my-lablog-data`.
+
+### 2. Run the installer
 
 ```bash
 bash <(curl -sL https://raw.githubusercontent.com/gautham-calico/calico-lablogs/main/setup-remote.sh)
 ```
 
-Then restart Claude Code.
+It will prompt you to paste your private repo URL. Then restart Claude Code.
 
-**Note:** The installer clones this public repo (tools/scripts) and a separate private repo ([calico-labdata](https://github.com/gautham-calico/calico-labdata)) for your actual logs, goals, and entries. You need access to both repos.
+### 3. Setup on additional machines
+
+Run the same one-liner on any other machine. If your data repo already exists, it will pull your existing logs automatically.
 
 ## Commands
 

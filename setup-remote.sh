@@ -10,13 +10,13 @@
 set -euo pipefail
 
 TOOLS_REPO="https://github.com/gautham-calico/calico-lablogs.git"
-DATA_REPO="https://github.com/gautham-calico/calico-labdata.git"
 LABLOG_DIR="$HOME/.claude/lablog"
 DATA_DIR="$HOME/.claude/lablog-data"
 COMMANDS_DIR="$HOME/.claude/commands"
 SETTINGS_FILE="$HOME/.claude/settings.json"
 
 echo "=== Setting up lablog on $(hostname) ==="
+echo ""
 
 # 1a. Clone or update the tools repo (public)
 mkdir -p "$HOME/.claude"
@@ -33,17 +33,43 @@ else
     git clone "$TOOLS_REPO" "$LABLOG_DIR"
 fi
 
-# 1b. Clone or update the data repo (private)
+# 1b. Clone or update the data repo (private, per-user)
 if [ -d "$DATA_DIR/.git" ]; then
     echo "[2/5] Data repo exists, pulling latest..."
     cd "$DATA_DIR" && git pull --rebase 2>/dev/null || true
 else
+    echo ""
+    echo "You need a private GitHub repo to store your logs, goals, and entries."
+    echo "Create one at: https://github.com/new (make it PRIVATE, empty — no README)"
+    echo ""
+    read -rp "Paste your private data repo URL (e.g. https://github.com/you/my-labdata.git): " DATA_REPO
+    echo ""
+
+    if [ -z "$DATA_REPO" ]; then
+        echo "ERROR: No repo URL provided. Exiting."
+        exit 1
+    fi
+
     if [ -d "$DATA_DIR" ]; then
         echo "[2/5] Backing up existing lablog-data dir..."
         mv "$DATA_DIR" "${DATA_DIR}.bak.$(date +%s)"
     fi
     echo "[2/5] Cloning data repo..."
-    git clone "$DATA_REPO" "$DATA_DIR"
+    if ! git clone "$DATA_REPO" "$DATA_DIR" 2>/dev/null; then
+        # Repo might be empty — init locally and push
+        echo "  Repo appears empty, initializing..."
+        mkdir -p "$DATA_DIR"
+        cd "$DATA_DIR"
+        git init
+        git remote add origin "$DATA_REPO"
+        echo ".DS_Store" > .gitignore
+        echo "*.swp" >> .gitignore
+        echo "*.tmp" >> .gitignore
+        git add .gitignore
+        git commit -m "Initial commit" --no-gpg-sign
+        git branch -M main
+        git push -u origin main 2>/dev/null || echo "  WARNING: Could not push. Check your repo access."
+    fi
 fi
 
 # Ensure directory structure in data repo
